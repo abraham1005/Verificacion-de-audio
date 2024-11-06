@@ -1,0 +1,1048 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:pPr><w:pStyle w:val="code"/></w:pPr><w:r><w:t><![CDATA[classdef Sistema_Verificacion < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                       matlab.ui.Figure
+        ReproducirAuteButton           matlab.ui.control.StateButton
+        ReproducirOrigButton           matlab.ui.control.StateButton
+        Image_2                        matlab.ui.control.Image
+        Image                          matlab.ui.control.Image
+        TextArea                       matlab.ui.control.TextArea
+        VerificaciondeintegridadLabel  matlab.ui.control.Label
+        VerificarButton                matlab.ui.control.StateButton
+        AudioaVerificarLabel           matlab.ui.control.Label
+        SeleccionarButton              matlab.ui.control.StateButton
+        AudioOriginalLabel             matlab.ui.control.Label
+        GenerarHashButton              matlab.ui.control.StateButton
+        DetenerButton                  matlab.ui.control.StateButton
+        AudioButton                    matlab.ui.control.StateButton
+        AudioDropDown                  matlab.ui.control.DropDown
+        AudioDropDownLabel             matlab.ui.control.Label
+        UIAxes_2                       matlab.ui.control.UIAxes
+        UIAxes                         matlab.ui.control.UIAxes
+    end
+
+    
+    properties (Access = public)
+        X; Fs; N; S; Ts; t; Hsh_D_auth; mC; extension1; extension2; tiempo; Opcion; AudioOr; paro = 0; Stop1; recObj; Archivotxt; fps; ovr;
+        X1; Fs1; contadorGrabacion = 1; txt; bandera;
+    end
+
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Value changed function: AudioDropDown
+        function AudioDropDownValueChanged(app, event)
+            value = app.AudioDropDown.Value; 
+            if value == "Seleccionar"
+                app.Opcion = 1;
+            else
+                app.Opcion = 2;
+            end
+        end
+
+        % Value changed function: AudioButton
+        function AudioButtonValueChanged(app, event)
+            value = app.AudioButton.Value;
+            
+            % Construir la ruta completa del archivo seleccionado
+  
+                        if app.Opcion == 1
+                            % Especificar el directorio inicial
+                            directorio_inicial = 'C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2';
+
+                            % Abrir el cuadro de diálogo para seleccionar un archivo desde el directorio especificado
+                            [archivo, ruta] = uigetfile(fullfile(directorio_inicial, '*.*'), 'Selecciona un archivo');
+                            if isequal(archivo, 0)
+                            senal = 'No se ha seleccionado ningún Audio';
+                            app.TextArea.FontColor = 'r';
+                            app.TextArea.Value = senal;
+                            return;
+                            else
+                            FileName = fullfile(directorio_inicial,archivo);
+                            app.AudioOr = FileName;
+            
+                            senal = 'Audio seleccionado';
+                            app.TextArea.FontColor = 'k';
+                            app.TextArea.Value = senal;
+                            end
+                        else
+                            directorio_guardado = ('C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2');
+
+                            % Configurar parámetros de grabación
+                            fs = 48000; % Frecuencia de muestreo en Hz
+                            nBits = 24; % Número de bits por muestra
+                            nChannels = 1; % Número de canales (1 para mono, 2 para estéreo)
+                            app.recObj = audiorecorder(fs, nBits, nChannels);
+            
+                            % Mostrar un mensaje indicando que la grabación comenzará
+                            senal = 'Grabando...';
+                            app.TextArea.FontColor = 'k';
+                            app.TextArea.Value = senal;
+            
+                             % Comenzar la grabación
+                             recordblocking(app.recObj, 20); % Graba durante 10 segundos
+                            
+                             if app.paro == 0
+                            % Obtener los datos de audio grabados
+                            audioData = getaudiodata(app.recObj);
+            
+                           % Guardar el audio grabado en un archivo WAV
+                            nombre_archivo = sprintf('grabacion_%d.wav', app.contadorGrabacion);
+                            %nombre_archivo = '1audio_grabado.wav';
+
+                            % Crear la ruta completa del archivo
+                            ruta_completa = fullfile(directorio_guardado, nombre_archivo);
+
+                            audiowrite(ruta_completa, audioData, fs);
+                            app.contadorGrabacion = app.contadorGrabacion + 1;
+    
+%                             directorio = ('C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2');
+%                             Ruta_Completa = fullfile(directorio,);
+                            app.AudioOr = ruta_completa;
+            
+            
+                            % Mostrar un mensaje indicando que el archivo ha sido guardado
+                            senal = 'Grabacion Guardada';
+                            app.TextArea.FontColor = 'k';
+                            app.TextArea.Value = senal;
+
+                            app.paro = 0;
+                             end
+                        end
+            
+        end
+
+        % Value changed function: DetenerButton
+        function DetenerButtonValueChanged(app, event)
+            value = app.DetenerButton.Value;
+            app.paro = 1;
+            % Seleccionar el directorio donde se guardará el archivo
+            directorio_guardado = ('C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2');
+
+            % Obtener los datos de audio grabados
+            stop(app.recObj);
+            audioData = getaudiodata(app.recObj);
+            fs = 48000;
+
+            % Guardar el audio grabado en un archivo WAV
+            nombre_archivo = sprintf('grabacion_%d.wav', app.contadorGrabacion);
+            %nombre_archivo = '1audio_grabado.wav';
+            % Crear la ruta completa del archivo
+            ruta_completa = fullfile(directorio_guardado, nombre_archivo);
+
+            audiowrite(ruta_completa, audioData, fs);
+            app.contadorGrabacion = app.contadorGrabacion + 1;
+
+            %directorio = ('C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2\1audio_grabado.wav');
+            app.AudioOr = ruta_completa;
+
+            % Mostrar un mensaje indicando que el archivo ha sido guardado
+            senal = 'Grabacion Guardada';
+            app.TextArea.FontColor = 'k';
+            app.TextArea.Value = senal;
+
+            
+        end
+
+        % Value changed function: GenerarHashButton
+        function GenerarHashButtonValueChanged(app, event)
+            value = app.GenerarHashButton.Value;
+            archivo = app.AudioOr;
+
+            if isequal(archivo, 0)
+                senal = 'No se ha seleccionado ningún audio';
+                app.TextArea.FontColor = 'r';
+                app.TextArea.Value = senal;
+                return;
+            else
+            [X1,Fs1] = audioread(archivo);
+            nombreArchivo = archivo;
+            % Usar fileparts para extraer la extensión del nombre del archivo
+            [~, ~, extension1] = fileparts(nombreArchivo);
+            [~, NombreAudio, ~] = fileparts(nombreArchivo);
+
+            app.extension1 = extension1;
+
+            Ts1 = 1/Fs1;
+            tiempo1=size(X1,1)/Fs1; %Tiempo que dura el audio
+            %sound(X,Fs); %Reproduce el audio
+
+            %*/*/*/*/*/*/ 1er Paso, pasar a mono el audio /*/*/*/*/*
+            [m1, n1] = size(X1); %n es el numero de canales
+            if n1 == 1
+                S1=X1;
+            else
+                %Se hace la comparacion con 2 ya que nos indica que no es mono
+                S1= (X1(:,1) + X1(:,2))./2; %Convierte a mono
+            end
+
+            N1 = length(S1);
+            t1 = 0:Ts1:(N1/Fs1)-Ts1;
+        
+            plot(app.UIAxes,t1, X1, 'b');
+
+            end
+
+           %  12 MFCC relevantes para analizar
+            MFCC_ini1 = 2; %9
+            MFCC_fin1 = 19; %29 66-72, 79.42
+
+            fps1 = 0.5; % Tamaño del Frame a procesar en segundos
+            ovr1 = 0.3; % Tamaño del traslape entre frames en segundos
+
+            Tfr1 = floor(fps1*Fs1); % Tamaño de frame en muestras
+            novr1 = floor(ovr1*Fs1); % Tamaño de overlapped en muestras
+            frecs1 = Fs1*(0:(Tfr1/2))/Tfr1;
+
+            Ham1 = window(@hamming, Tfr1); % Crea Ventana de Hamming
+            mfccParams1 = feature_mfccs_init(Tfr1, Fs1); % Se crean parametros del MFCC
+
+            n1=1; %n-esimo frame del audio
+            ifr1 = 1; %Inicio frame solo primera vez
+            ffr1 = ifr1+Tfr1-1;  %Fin de frame solo primera vez
+            Hsh_o1 = [];
+            while ffr1<N1
+                fn1(n1,:) = S1(ifr1:ffr1); %n-esimo frame de audio a procesar
+                fn_h1(n1,:) = fn1(n1,:).*Ham1'; % Se filtra el frame por la ventana hamming
+                FFTp1 = abs(fft(fn_h1(n1,:)));% / Tfr; % Calculo del espectro normalizado por numero de muestras
+                FFT1(n1,:) = FFTp1(1:ceil(Tfr1/2)); % Regresa solo la primera mitad espectro
+                MFCC1 = feature_mfccs(FFT1(n1,:)', mfccParams1);
+                MFCCs1(n1,:) = MFCC1(MFCC_ini1:MFCC_fin1); %Solo algunos %MFCC's
+                Hsh_o1 = [Hsh_o1 MFCCs1(n1,:)];
+                Hsh_oMatrix1(n1,:) = MFCCs1(n1,:);
+                Sfi1(1,n1) = ifr1*Ts1; %Vector de inicio en seg. de cada frame
+                n1=n1+1;
+                ifr1 = ffr1-novr1+1; %Inicio de n+1 frame
+                ffr1 = ifr1+Tfr1-1;  %Fin de frame
+            end
+
+            Hsh_oMatrix1 = round(Hsh_oMatrix1*1000)'; %REDONDEA LOS VALORES
+            NegHsh1 = double(Hsh_oMatrix1(:)>0); %GUARDA LAS POSICIONES DE LOS VALORES QUE SON POSITIVOS O GENERA EL BIT DE SIGNO
+            Hsh_b1 = de2bi(Hsh_oMatrix1(:).*((NegHsh1*2)-1),15,'left-msb'); %TRANSFORMA LOS VALORES A BINARIO DE 15 BITS
+            Hsh_bc1 = [NegHsh1 Hsh_b1]; %AQUI CONCATENA EL BIT DE SIGNO CON LA CADENA DE 15 BITS QUE GENERO ARRIBA. PARA DAR 16 BITS
+            %Hsh_DecO = bi2de(Hsh_bc);
+            Hsh_bc1 = Hsh_bc1'; % AQUI INVIERTE LA MATRIZ DE 340X16 A 16X340
+            Hsh_bc1 = Hsh_bc1(:); %AQUI LA HACE UN VECTOR COLUMNA, CONCATENA LA MATRIZ
+            Hsh_bc1 = Hsh_bc1'; %AQUI LA INVIERTE DE COLUMNA A FILA.
+
+            %AQUI VA FORMANDO EL HASH. PASA LOS VALORES DE BINARIO DE 4 EN 4 A DECIMAL.
+            %LUEGO ESOS VALORES LOS PASA A HEXADECIMAL.
+            ii1 = 1;
+            for i1=1:4:length(Hsh_bc1)
+                Hsh_Nibble1(ii1) = dec2hex(bi2de(Hsh_bc1(i1:i1+3),'left-msb'));
+                ii1 = ii1+1;
+            end
+            %% MODIFICACIONES. AGREGAR LA CODIFICACION ARITMETICA
+
+            mensaje = Hsh_Nibble1;
+
+            fuente=unique(mensaje); % para devolver los mismos datos en mensaje, pero sin repeticiones y en orden.
+            % Contar la frecuencia de cada caracter en el mensaje
+            conteo=zeros(1,length(fuente)); %Es un vector del tamaño de los caracteres unicos
+            % %Devuelvo cantidad de caracteres unicos
+            for i=1:length(fuente)
+                %La función strfind devuelve un vector de índices que indican las posiciones de inicio de cada ocurrencia de la subcadena dentro de la cadena principal
+                conteo(i)=length(strfind(mensaje,fuente(i)));
+            end
+            %Guardo las posiciones segun el mensaje devuelto por unique
+            % % Crear una secuencia de índices de los caracteres en el mensaje
+            secuencia=zeros(1,length(mensaje));
+            for i=1:length(mensaje)
+                secuencia(i)=strfind(fuente,mensaje(i));%Va viendo conforme la cadena que metimos, en base al vector de los caracteres obtenidos
+                %En que posicion del vector de caracteres se encuentra la letra que esta analizando
+            end
+
+            codigo = arithenco(secuencia, conteo);  %Secuencia del mensaje cantidad de carcateres
+
+            % Crear una tabla que almacene los datos de las matrices
+            Informacion = [codigo(:); secuencia(:); conteo(:); fuente(:)];
+
+            % Guardar información sobre el tamaño de las matrices
+            Tamanos = [size(codigo); size(secuencia); size(conteo); size(fuente)];
+
+            switch extension1
+                case '.wav'
+                    variable = 1;
+                case '.mp3'
+                    variable = 2;
+                case '.ogg'
+                    variable = 3;
+                case '.flac'
+                    variable = 4;
+                case '.m4a'
+                    variable = 5;
+                otherwise
+                    senal = 'formato no valido';
+                    app.TextArea.FontColor = 'k';
+                    app.TextArea.Value = senal;
+            end
+
+            Hash_Aud_Orig =[Tamanos(:); Informacion(:); variable(:)];
+
+            % Especificar el nombre del archivo
+            nombre_archivo = [NombreAudio, '.txt'];
+
+            directorio_guardado = 'C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Archivos txt';
+
+            % Crear la ruta completa del archivo
+            ruta_completatxt = fullfile(directorio_guardado, nombre_archivo);
+
+            % Guardar los datos en un archivo de texto
+            save(ruta_completatxt, 'Hash_Aud_Orig', '-ascii');
+            app.bandera = 1;
+            
+            senal = 'Hash de Audio Original generado';
+            app.TextArea.FontColor = 'k';
+            app.TextArea.Value = senal;
+            app.X1 = X1; app.Fs1 = Fs1; app.txt = load(ruta_completatxt, '-ascii'); 
+        end
+
+        % Callback function
+        function txtButtonValueChanged(app, event)
+            value = app.txtButton.Value;
+            directorio_inicial = 'C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Archivos txt';
+
+            % Abrir el cuadro de diálogo para seleccionar un archivo desde el directorio especificado
+            [archivotxt, ruta] = uigetfile(fullfile(directorio_inicial, '*.*'), 'Selecciona un archivo');
+            if isequal(archivotxt, 0)
+                senal = 'No se ha seleccionado ningún archivo txt';
+                app.TextArea.FontColor = 'r';
+                app.TextArea.Value = senal;
+                return;
+            else
+                ruta_completa = fullfile(ruta, archivotxt);
+                Hashtxt = load(ruta_completa, '-ascii');
+
+                senal = 'Archivo txt seleccionado';
+                app.TextArea.FontColor = 'k';
+                app.TextArea.Value = senal;
+
+                app.Archivotxt = Hashtxt;
+                app.bandera = 0;
+            end
+        end
+
+        % Value changed function: SeleccionarButton
+        function SeleccionarButtonValueChanged(app, event)
+            value = app.SeleccionarButton.Value;
+            directorio_inicial = 'C:\Users\Rosal\OneDrive\Escritorio\Dan\Escuela\ESIME\8vo Semestre\Transferencia y Procesamiento de la Informacion II\Codigos\Nuevo Codigo\Audios2';
+
+            % Abrir el cuadro de diálogo para seleccionar un archivo desde el directorio especificado
+            [archivo, ruta] = uigetfile(fullfile(directorio_inicial, '*.*'), 'Selecciona un archivo');
+            
+            if isequal(archivo, 0)
+                senal = 'No se ha seleccionado ningún Audio';
+                app.TextArea.FontColor = 'r';
+                app.TextArea.Value = senal;
+                return;
+            else
+                FileName = fullfile(directorio_inicial,archivo);
+                [X,Fs] = audioread(FileName); %Fs-> Cantidad de muestras por seg
+                nombreArchivo = FileName;
+                % Usar fileparts para extraer la extensión del nombre del archivo
+                [~, ~, extension2] = fileparts(nombreArchivo);
+
+                app.extension2 = extension2;
+
+                Ts = 1/Fs;
+                tiempo=size(X,1)/Fs; %Tiempo que dura el audio
+                %sound(X,Fs); %Reproduce el audio
+
+                %*/*/*/*/*/*/ 1er Paso, pasar a mono el audio /*/*/*/*/*
+                [m, n] = size(X); %n es el numero de canales
+                if n == 1
+                    S=X;
+                else
+                    %Se hace la comparacion con 2 ya que nos indica que no es mono
+                    S= (X(:,1) + X(:,2))./2; %Convierte a mono
+                end
+
+                N = length(S);
+                t = 0:Ts:(N/Fs)-Ts;
+
+                plot(app.UIAxes_2,t, X, 'b');
+            end
+
+            %  12 MFCC relevantes para analizar
+            MFCC_ini = 2; %9
+            MFCC_fin = 19; %29 66-72, 79.42
+
+            fps = 0.5; % Tamaño del Frame a procesar en segundos
+            ovr = 0.3; % Tamaño del traslape entre frames en segundos
+
+            Tfr = floor(fps*Fs); % Tamaño de frame en muestras
+            novr = floor(ovr*Fs); % Tamaño de overlapped en muestras
+            frecs = Fs*(0:(Tfr/2))/Tfr;
+
+            Ham = window(@hamming, Tfr); % Crea Ventana de Hamming
+            mfccParams = feature_mfccs_init(Tfr, Fs); % Se crean parametros del MFCC
+
+            n=1; %n-esimo frame del audio
+            ifr = 1; %Inicio frame solo primera vez
+            ffr = ifr+Tfr-1;  %Fin de frame solo primera vez
+            Hsh_o = [];
+            while ffr<N
+                fn(n,:) = S(ifr:ffr); %n-esimo frame de audio a procesar
+                fn_h(n,:) = fn(n,:).*Ham'; % Se filtra el frame por la ventana hamming
+                FFTp = abs(fft(fn_h(n,:)));% / Tfr; % Calculo del espectro normalizado por numero de muestras
+                FFT(n,:) = FFTp(1:ceil(Tfr/2)); % Regresa solo la primera mitad espectro
+                MFCC = feature_mfccs(FFT(n,:)', mfccParams);
+                MFCCs(n,:) = MFCC(MFCC_ini:MFCC_fin); %Solo algunos %MFCC's
+                Hsh_o = [Hsh_o MFCCs(n,:)];
+                Hsh_oMatrix(n,:) = MFCCs(n,:);
+                Sfi(1,n) = ifr*Ts; %Vector de inicio en seg. de cada frame
+                ti_tf(n,:) = [ifr*Ts ffr*Ts ifr ffr];
+                n=n+1;
+                ifr = ffr-novr+1; %Inicio de n+1 frame
+                ffr = ifr+Tfr-1;  %Fin de frame
+            end
+
+            [nC mC] = size(Hsh_oMatrix); % nC num total de caract. mC num caracteristicas por frame
+            %% GENERACION DEL HASH
+            Hsh_oMatrix = round(Hsh_oMatrix*1000)'; %REDONDEA LOS VALORES
+            NegHsh = double(Hsh_oMatrix(:)>0); %GUARDA LAS POSICIONES DE LOS VALORES QUE SON POSITIVOS
+            Hsh_b = de2bi(Hsh_oMatrix(:).*((NegHsh*2)-1),15,'left-msb'); %TRANSFORMA LOS VALORES A BINARIO
+            Hsh_auth = [NegHsh Hsh_b];
+            Hsh_auth = Hsh_auth(: , 2:end); % AQUI QUITO EL 1ER BIT DE SIGNO 
+            Hsh_auth = fliplr(Hsh_auth); % ESTO LO PUSE PARA QUE LEA DE DERECHA A IZQUIERDA
+            Hsh_D_auth = bi2de(Hsh_auth); %AQUI YA LO PASA A DECIMAL EN SU VALOR REAL
+
+            senal = 'Audio a verificar cargado y hash generado';
+            app.TextArea.FontColor = 'k';
+            app.TextArea.Value = senal;
+         
+           app.Hsh_D_auth = Hsh_D_auth; app.mC = mC; app.X = X; app.Fs = Fs; app.t = t; app.tiempo = tiempo; app.fps = fps; app.ovr = ovr;
+        end
+
+        % Value changed function: VerificarButton
+        function VerificarButtonValueChanged(app, event)
+            value = app.VerificarButton.Value;
+            %% DECODIFICACION ARITMETICA
+            Hsh_D_auth = app.Hsh_D_auth; mC = app.mC;   X = app.X;   Fs = app.Fs;  Ts = app.Ts;  t = app.t; fps = app.fps; ovr = app.ovr; extension1 = app.extension1;
+            extension2 = app.extension2; tiempo = app.tiempo; 
+            %% 
+            %Poner una condicion apra separar un txt de si agarro un audio 
+            if app.bandera == 1
+                HashCod = app.txt;
+            else
+                HashCod = app.Archivotxt;
+            end
+
+            if isequal(HashCod, 0)
+                senal = 'No se ha seleccionado ningún archivo txt';
+                app.TextArea.FontColor = 'r';
+                app.TextArea.Value = senal;
+                return;
+            else
+                % Extraer la información sobre el tamaño de cada matriz
+                tamanio_codigo = HashCod(5, 1);
+                tamanio_secuencia = HashCod(6, 1);
+                tamanio_conteo = HashCod(7, 1);
+                tamanio_fuente = HashCod(8, 1);
+
+                % Calcular los índices de inicio y fin para cada matriz en el vector de datos
+                inicio_codigo = 9;
+                fin_codigo = (tamanio_codigo+8);
+
+                inicio_secuencia = fin_codigo + 1;
+                fin_secuencia = inicio_secuencia + (tamanio_secuencia) - 1;
+
+                inicio_conteo = fin_secuencia + 1;
+                fin_conteo = inicio_conteo + (tamanio_conteo) - 1;
+
+                inicio_fuente = fin_conteo + 1;
+                fin_fuente = inicio_fuente + (tamanio_fuente) - 1;
+
+                % Reconstruir las matrices originales
+                codigo = HashCod(inicio_codigo:fin_codigo); codigo = codigo';
+                secuencia = HashCod(inicio_secuencia:fin_secuencia); secuencia = secuencia';
+                conteo = HashCod(inicio_conteo:fin_conteo); conteo = conteo';
+                fuente = HashCod(inicio_fuente:fin_fuente); fuente = fuente';
+
+                extension1 = HashCod(end);
+
+            switch extension1
+                case 1
+                    extension1 = '.wav';
+                case 2
+                    extension1 = '.mp3';
+                case 3
+                    extension1 = '.ogg';
+                case 4
+                    extension1 = '.flac';
+                case 5
+                    extension1 = '.m4a';
+                otherwise
+                    senal = 'formato no valido';
+                    app.TextArea.FontColor = 'k';
+                    app.TextArea.Value = senal;
+            end
+            end
+%%
+            % Decodificar la secuencia codificada utilizando arithdeco
+            secuencia_decodificada=arithdeco(codigo,conteo,length(secuencia));
+           
+            mensaje_decodificado=zeros(1,length(secuencia_decodificada));
+            for i=1:length(secuencia_decodificada)
+                a=secuencia_decodificada(i); %Aqui en base a la secuencia, a va a tomar el valor que leyo en la secuencia
+                mensaje_decodificado(i)=fuente(a);%Aqui ira almacenando el valor decimal del caracter encontrado, formando la cadena
+            end
+            Resultado=char(mensaje_decodificado);
+            Hsh_Nibble = Resultado;
+            %% LA PARTE DE LA COMPARACION EL HASH ORIGINAL ENVIADO Y EL HASH A AUTENTICAR GENERADO
+            %AQUI SE PASA EL HASH ORIGINAL DE HEXA A DECIMAL, LUEGO DE DECIMAL A
+            %BINARIO DE 4 NUMEROS CON UN ORDENAMIENTO POR EL LEFT-MSB
+            for i=1:length(Hsh_Nibble)
+                Hsh_bH(i,:) = de2bi(hex2dec(Hsh_Nibble(i)),4,'left-msb');
+            end
+
+            ii=1;
+            for i=1:4:length(Hsh_Nibble)
+                Hsh_b16(ii,1:16) = [Hsh_bH(i,:),Hsh_bH(i+1,:),Hsh_bH(i+2,:),Hsh_bH(i+3,:)]; %AQUI BUSCA CONCATENAR LOS BITS PARA FORMAR LOS 16
+                ii = ii+1;
+            end
+            Hsh_D_orig = Hsh_b16(: , 2:end); %QUITAMOS EL BIT DE SIGNO
+            Hsh_D_orig = fliplr(Hsh_D_orig); %ACOMODAMOS PARA QUE SE LEAN DE DERECHA A IZQUIEDA
+            Hsh_D_orig = bi2de(Hsh_D_orig); %SE PASA AHORA SI A DECIMAL
+
+            segmentoTiem = fps - ovr; %Tamano de la ventana en miliseg
+            umbral = 0.97;
+            %% PARTE DE COMPROBAR SI SE HA AÑADIDO O RETIRADO PARTES DEL AUDIO
+            %% IF para verificar si se ha añadido audio al final
+            if (length(Hsh_D_auth) > length(Hsh_D_orig))
+                    % SIMILITUD DEL COSENO------------------------------------------------
+                    ii=1;
+                    for i=1:mC:length(Hsh_D_orig) %mc numero de caracteristicas por frame
+                        HshxFr(ii,:) = Hsh_D_orig(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                        HshxFr_Auth(ii,:) = Hsh_D_auth(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                        SimCos(1,ii) = sum(HshxFr(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                        ii = ii+1;
+                    end
+                    NN = isnan(SimCos);
+                    SimCos(NN)=0; % Similitud coseno entre hash original y el del audio autenticar
+
+                    % Inicializa el contador
+                    contador = 1;
+
+                    % Utiliza un bucle for para contar los valores mayores que el valor límite
+                    for i = 1:length(SimCos)
+                        if SimCos(i) > umbral
+                            contador = contador + 1;
+                        end
+                    end
+                    M = (length(Hsh_D_auth) - length(Hsh_D_orig))/18;
+
+                    if(SimCos(1,1) < umbral && (length(Hsh_D_auth)-length(Hsh_D_orig)>18)) % IF PARA VER SI HAY ADICION AL INICIO
+                        ajuste = length(Hsh_D_auth) - length(Hsh_D_orig)
+                        hs2 = Hsh_D_auth(ajuste+1:end);
+
+                        ii=1;
+                        for i=1:mC:length(Hsh_D_orig) %mc numero de caracteristicas por frame
+                            HshxFr2(ii,:) = Hsh_D_orig(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                            HshxFr_Auth(ii,:) = hs2(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                            SimCos2(1,ii) = sum(HshxFr2(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr2(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                            ii = ii+1;
+                        end
+                        NN2 = isnan(SimCos2);
+                        SimCos2(NN2)=0; % Similitud coseno entre hash original y el del audio autenticar
+
+                        if(SimCos2(1,1) > umbral || SimCos2(1,end) > 0.93)
+                            senal = 'Audio con adición';
+                            app.TextArea.FontColor = 'r';
+                            app.TextArea.Value = senal;
+
+                            indice_resaltar = 1;
+                            valor_resaltar2 = (ajuste/18)*segmentoTiem;
+
+                            % Trazar solo los valores correspondientes al área resaltada en rojo
+                            % Trazar5 toda la señal de datos
+                            plot(app.UIAxes_2,t, X, 'b'); % Grafica los datos en azul
+                            hold(app.UIAxes_2,'on'); % Mantener la gráfica actual
+
+                            % Identificar el índice correspondiente al valor a partir del cual deseas resaltar
+                            indice_resaltar2 = find(t >= valor_resaltar2, 1);
+
+                            % Resaltar el área desde el valor resaltado hasta el final
+                            area_valores = X(indice_resaltar:indice_resaltar2); % Valores correspondientes al área resaltada
+
+                            % Trazar solo los valores correspondientes al área resaltada en rojo
+                            plot(app.UIAxes_2,t(indice_resaltar:indice_resaltar2), area_valores, 'r');
+                            hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+
+                        else  %PARA VER SI SE INGRESO UN AUDIO DIFERENTE MAS GRANDE
+                            senal = 'Audio Diferente';
+                            app.TextArea.FontColor = 'r';
+                            app.TextArea.Value = senal;
+                            plot(app.UIAxes_2,t, X, 'r');
+                        end
+
+                    elseif (contador == length(SimCos) && (length(Hsh_D_auth)-length(Hsh_D_orig)>mC)) % ELSEIF PARA VER SI HAY ADICION AL FINAL
+                        senal = 'Audio con adición';
+                        app.TextArea.FontColor = 'r';
+                        app.TextArea.Value = senal;
+
+                        % Valor a partir del cual deseas resaltar
+                        valor_resaltar = contador*segmentoTiem; %A PARTIR DE DONDE ESTA LO SOBRANTE O ALTERADO
+
+                        % Trazar toda la señal de datos
+                        plot(app.UIAxes_2,t, X, 'b'); % Grafica los datos en azul
+                        hold(app.UIAxes_2,'on'); % Mantener la gráfica actual
+
+                        % Identificar el índice correspondiente al valor a partir del cual deseas resaltar
+                        indice_resaltar = find(t >= valor_resaltar, 1);
+
+                        % Resaltar el área desde el valor resaltado hasta el final
+                        area_valores = X(indice_resaltar:length(X)); % Valores correspondientes al área resaltada
+
+                        % Trazar solo los valores correspondientes al área resaltada en rojo
+                        plot(app.UIAxes_2,t(indice_resaltar:end), area_valores, 'r');
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+
+                    elseif (contador > 2 && length(Hsh_D_auth)-length(Hsh_D_orig)>mC) % ELSE PARA VER SI HAY ADICION EN MEDIO
+                        senal = 'Audio con adición';
+                        app.TextArea.FontColor = 'r';
+                        app.TextArea.Value = senal;
+
+                        % Valor a partir del cual deseas resaltar
+                        valor_resaltar = contador*segmentoTiem; %A PARTIR DE DONDE ESTA LO SOBRANTE O ALTERADO
+                        valor_resaltar2 = (contador+M)*segmentoTiem;
+
+                        % Trazar toda la señal de datos
+                        plot(app.UIAxes_2,t, X, 'b'); % Grafica los datos en azul
+                        hold(app.UIAxes_2,'on'); % Mantener la gráfica actual
+
+                        % Identificar el índice correspondiente al valor a partir del cual deseas resaltar
+                        indice_resaltar = find(t >= valor_resaltar, 1);
+                        indice_resaltar2 = find(t >= valor_resaltar2, 1);
+
+                        % Resaltar el área desde el valor resaltado hasta el final
+                        area_valores = X(indice_resaltar:indice_resaltar2); % Valores correspondientes al área resaltada
+
+                        % Trazar solo los valores correspondientes al área resaltada en rojo
+                        plot(app.UIAxes_2,t(indice_resaltar:indice_resaltar2), area_valores, 'r');
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+
+                    elseif (length(Hsh_D_auth)-length(Hsh_D_orig)>=mC)
+                        matches = zeros(1, length(Hsh_D_orig) / mC);
+                        ii = 1; aceptados = 0;
+                        % Recorremos cada elemento de a
+                        for i = 1:mC:length(Hsh_D_orig)
+                            HshxFr(ii,:) = Hsh_D_orig(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                            HshxFr_Auth(ii,:) = Hsh_D_auth(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                            SimCos(1,ii) = sum(HshxFr(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                            if SimCos(1,ii) > umbral
+                                matches(ii) = 1;
+                                aceptados = aceptados + 1;
+                            else
+                                matches(ii) = 0;
+                            end
+                            ii = ii + 1;
+                        end
+
+                        % Trazar toda la señal de datos
+                        plot(app.UIAxes_2,t, X, 'b'); % Grafica los datos en azul
+                        hold(app.UIAxes_2,'on'); % Mantener la gráfica actual
+
+                        for i = 1: length(matches)
+                            if(aceptados == length(SimCos)) %IF PARA DECIR SI ES O NO AUTENTICO (IGUALES)
+                                senal = 'Audio Autentico';
+                                app.TextArea.FontColor = 'b';
+                                app.TextArea.Value = senal;
+                                plot(app.UIAxes_2,t, X, 'b');
+                            else
+                                if matches(i) == 0
+                                    %inicio_seg = (i-1) * segmentoTiem;
+                                    inicio_seg = (i) * segmentoTiem;
+
+                                    fin_seg = inicio_seg + segmentoTiem; %A
+                                    % Asegurarse de seleccionar el rango de tiempo correctamente
+                                    colorear = (t >= inicio_seg) & (t <= fin_seg); %Rangos que no son iguales
+                                    plot(app.UIAxes_2, t(colorear), X(colorear), 'r'); % 'r' para resaltar en rojo
+
+                                    senal = 'Audio no autentico';
+                                    app.TextArea.FontColor = 'r';
+                                    app.TextArea.Value = senal;
+                                end
+                            end
+                        end
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+                    end
+                    %% ELSEIF para verificar los que han sido recortados
+            elseif (length(Hsh_D_auth) < length(Hsh_D_orig))
+                % SIMILITUD DEL COSENO------------------------------------------------
+                ii=1;
+                for i=1:mC:length(Hsh_D_auth) %mc numero de caracteristicas por frame
+                    HshxFr(ii,:) = Hsh_D_orig(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                    HshxFr_Auth(ii,:) = Hsh_D_auth(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                    SimCos(1,ii) = sum(HshxFr(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                    ii = ii+1;
+                end
+                NN = isnan(SimCos);
+                SimCos(NN)=0; % Similitud coseno entre hash original y el del audio autenticar
+
+                plot(app.UIAxes_2,t, X, 'b');
+                hold(app.UIAxes_2,'on'); %Mantener grafica
+
+                    % Inicializa el contador
+                    contador = 1;
+                    % Utiliza un bucle for para contar los valores mayores que el valor límite
+                    for i = 1:length(SimCos)
+                        if SimCos(i) > umbral
+                            contador = contador + 1;
+                        end
+                    end
+
+                    if(SimCos(1,1) < umbral) % IF PARA VER SI HAY ADICION AL INICIO
+                        ajuste = length(Hsh_D_orig) - length(Hsh_D_auth)
+                        hs2 = Hsh_D_orig(ajuste+1:end);
+
+                        ii=1;
+                        for i=1:mC:length(Hsh_D_auth) %mc numero de caracteristicas por frame
+                            HshxFr2(ii,:) = Hsh_D_auth(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                            HshxFr_Auth(ii,:) = hs2(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                            SimCos2(1,ii) = sum(HshxFr2(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr2(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                            ii = ii+1;
+                        end
+                        NN2 = isnan(SimCos2);
+                        SimCos2(NN2)=0; % Similitud coseno entre hash original y el del audio autenticar
+                        if (SimCos2(1,1) > umbral || SimCos2(1,end) > umbral) % IF EN CASO QUE SE INGRESO UN AUDIO DIFERENTE MAS CORTO
+                            senal = 'Audio con recorte';
+                            app.TextArea.FontColor = 'r';
+                            app.TextArea.Value = senal;
+
+                            indice_resaltar = 1;
+                            indice_final = Fs/8;
+                            % Resaltar el área desde el valor resaltado hasta el final
+                            area_valores = X(indice_resaltar:indice_final); % Valores correspondientes al área resaltada
+
+                            % Trazar solo los valores correspondientes al área resaltada en rojo
+                            plot(app.UIAxes_2,t(indice_resaltar:indice_final), area_valores, 'r');
+                            hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+
+                        else % VER SI HAY RECORTES AL INICIO
+                            senal = 'Audio Diferente';
+                            app.TextArea.FontColor = 'r';
+                            app.TextArea.Value = senal;
+                            plot(app.UIAxes_2,t, X, 'r');
+                        end
+
+                    elseif(contador >= length(SimCos)) % IF PARA VER SI HAY RECORTES AL FINAL
+                        senal = 'Audio con recorte';
+                        app.TextArea.FontColor = 'r';
+                        app.TextArea.Value = senal;
+
+                        % Valor a partir del cual deseas resaltar
+                        valor_resaltar = tiempo-0.15; %A PARTIR DE DONDE ESTA LO SOBRANTE O ALTERADO
+
+                        indice_resaltar = find(t >= valor_resaltar, 1);
+                        indice_final = indice_resaltar + (Fs/10);
+
+                        % Resaltar el área desde el valor resaltado hasta el final
+                        area_valores = X(indice_resaltar:indice_final); % Valores correspondientes al área resaltada
+
+                        % Trazar solo los valores correspondientes al área resaltada en rojo
+                        plot(app.UIAxes_2, t(indice_resaltar:indice_final), area_valores, 'r');
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+
+                    else % IF PARA VER SI HAY RECORTES EN MEDIO
+                        senal = 'Audio con recorte';
+                        app.TextArea.FontColor = 'r';
+                        app.TextArea.Value = senal;
+
+                        % Valor a partir del cual deseas resaltar
+                        valor_resaltar = contador*segmentoTiem; %A PARTIR DE DONDE ESTA LO SOBRANTE O ALTERADO
+
+                        indice_resaltar = find(t >= valor_resaltar, 1);
+                        indice_resaltar = indice_resaltar - (Fs/10);
+                        indice_final = indice_resaltar + (Fs/10);
+
+                        % Resaltar el área desde el valor resaltado hasta el final
+                        area_valores = X(indice_resaltar:indice_final); % Valores correspondientes al área resaltada
+
+                        % Trazar solo los valores correspondientes al área resaltada en rojo
+                        plot(app.UIAxes_2, t(indice_resaltar:indice_final), area_valores, 'r');
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+                    end
+                %% Else para verificar los que han sido editados
+            else
+                    % SIMILITUD DEL COSENO------------------------------------------------
+                    ii=1;
+                    for i=1:mC:length(Hsh_D_orig)
+                        HshxFr(ii,:) = Hsh_D_orig(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH ORIGINAL
+                        HshxFr_Auth(ii,:) = Hsh_D_auth(i:i+mC-1); %AQUI RECIBE LAS 10 CARACTERISTICAS DEL HASH A AUTENTICAR
+                        SimCos(1,ii) = sum(HshxFr(ii,:).*HshxFr_Auth(ii,:))/(sqrt(sum(HshxFr(ii,:).^2))*sqrt(sum(HshxFr_Auth(ii,:).^2)));
+                        ii = ii+1;
+                    end
+                    NN = isnan(SimCos);
+                    SimCos(NN)=0; % Similitud coseno entre hash original y el del audio autenticar
+
+                    Dif = Hsh_D_orig - Hsh_D_auth;
+
+                    similitudes_aceptadas = SimCos >= umbral;
+
+                    aceptados = 0;
+                    for i = 1:length(similitudes_aceptadas)
+                        if similitudes_aceptadas(i) == 1
+                            aceptados = aceptados+1;
+                        end
+                    end
+
+                    if(aceptados == length(SimCos) || aceptados == (length(SimCos)-1)) %IF PARA DECIR SI ES O NO AUTENTICO (IGUALES) || aceptados == (length(SimCos)-1)
+                        senal = 'Audio Autentico';
+                        app.TextArea.FontColor = 'b';
+                        app.TextArea.Value = senal;
+                        plot(app.UIAxes_2,t, X, 'b');
+
+                    else
+                        plot(app.UIAxes_2, t, X, 'b');
+                        hold(app.UIAxes_2,'on'); %Mantener grafica
+
+                        % Itera sobre todos los segmentos
+                        for i = 1: length(similitudes_aceptadas)
+                            frameNo_aceptado = find(similitudes_aceptadas == 0);
+
+                            if length(frameNo_aceptado) >= length(SimCos) % IF PARA MARCAR AUDIO DIFERENTE
+                                senal = 'Audio Diferente';
+                                app.TextArea.FontColor = 'r';
+                                app.TextArea.Value = senal;
+                                plot(app.UIAxes_2,t, X, 'r');
+
+                            else
+                                if similitudes_aceptadas(i) == 0
+                                    %inicio_seg = (i-1) * segmentoTiem;
+                                    inicio_seg = (i) * segmentoTiem;
+
+                                    fin_seg = inicio_seg + segmentoTiem; %POR ALGUNA RAZON HABIA UN *2 EN SEGMENTOTIEMP
+                                    % Asegurarse de seleccionar el rango de tiempo correctamente
+                                    colorear = (t >= inicio_seg) & (t <= fin_seg); %Rangos que no son iguales
+                                    plot(app.UIAxes_2, t(colorear), X(colorear), 'r'); % 'r' para resaltar en rojo
+
+                                    senal = 'Audio no autentico';
+                                    app.TextArea.FontColor = 'r';
+                                    app.TextArea.Value = senal;
+                                end
+                            end
+                        end
+                        hold(app.UIAxes_2,'off'); % Liberar la gráfica actual
+                    end
+            end
+        end
+
+        % Button down function: UIAxes
+        function UIAxesButtonDown(app, event)
+            
+        end
+
+        % Button down function: UIAxes_2
+        function UIAxes_2ButtonDown(app, event)
+            
+        end
+
+        % Value changed function: TextArea
+        function TextAreaValueChanged(app, event)
+            value = app.TextArea.Value;
+            
+        end
+
+        % Value changed function: ReproducirOrigButton
+        function ReproducirOrigButtonValueChanged(app, event)
+            value = app.ReproducirOrigButton.Value;
+            X1 = app.X1; Fs1 = app.Fs1;
+
+            sound(X1,Fs1);
+        end
+
+        % Value changed function: ReproducirAuteButton
+        function ReproducirAuteButtonValueChanged(app, event)
+            value = app.ReproducirAuteButton.Value;
+            X = app.X; Fs = app.Fs;
+
+            sound(X,Fs);
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Get the file path for locating images
+            pathToMLAPP = fileparts(mfilename('fullpath'));
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Position = [100 100 1398 761];
+            app.UIFigure.Name = 'MATLAB App';
+
+            % Create UIAxes
+            app.UIAxes = uiaxes(app.UIFigure);
+            xlabel(app.UIAxes, 'Tiempo (seg)')
+            ylabel(app.UIAxes, 'Amplitud')
+            zlabel(app.UIAxes, 'Z')
+            app.UIAxes.FontName = 'Times New Roman';
+            app.UIAxes.FontWeight = 'bold';
+            app.UIAxes.FontSize = 14;
+            app.UIAxes.ButtonDownFcn = createCallbackFcn(app, @UIAxesButtonDown, true);
+            app.UIAxes.Position = [242 392 948 312];
+
+            % Create UIAxes_2
+            app.UIAxes_2 = uiaxes(app.UIFigure);
+            xlabel(app.UIAxes_2, 'Tiempo (seg)')
+            ylabel(app.UIAxes_2, 'Amplitud')
+            zlabel(app.UIAxes_2, 'Z')
+            app.UIAxes_2.FontName = 'Times New Roman';
+            app.UIAxes_2.FontWeight = 'bold';
+            app.UIAxes_2.FontSize = 14;
+            app.UIAxes_2.ButtonDownFcn = createCallbackFcn(app, @UIAxes_2ButtonDown, true);
+            app.UIAxes_2.Position = [242 62 948 297];
+
+            % Create AudioDropDownLabel
+            app.AudioDropDownLabel = uilabel(app.UIFigure);
+            app.AudioDropDownLabel.HorizontalAlignment = 'right';
+            app.AudioDropDownLabel.FontName = 'Times New Roman';
+            app.AudioDropDownLabel.FontSize = 14;
+            app.AudioDropDownLabel.Position = [46 529 40 22];
+            app.AudioDropDownLabel.Text = 'Audio';
+
+            % Create AudioDropDown
+            app.AudioDropDown = uidropdown(app.UIFigure);
+            app.AudioDropDown.Items = {'Grabar', 'Seleccionar'};
+            app.AudioDropDown.ValueChangedFcn = createCallbackFcn(app, @AudioDropDownValueChanged, true);
+            app.AudioDropDown.FontName = 'Times New Roman';
+            app.AudioDropDown.FontSize = 14;
+            app.AudioDropDown.Position = [112 524 100 32];
+            app.AudioDropDown.Value = 'Grabar';
+
+            % Create AudioButton
+            app.AudioButton = uibutton(app.UIFigure, 'state');
+            app.AudioButton.ValueChangedFcn = createCallbackFcn(app, @AudioButtonValueChanged, true);
+            app.AudioButton.Text = 'Audio';
+            app.AudioButton.FontName = 'Times New Roman';
+            app.AudioButton.FontSize = 16;
+            app.AudioButton.Position = [46 434 66 31];
+
+            % Create DetenerButton
+            app.DetenerButton = uibutton(app.UIFigure, 'state');
+            app.DetenerButton.ValueChangedFcn = createCallbackFcn(app, @DetenerButtonValueChanged, true);
+            app.DetenerButton.Text = 'Detener';
+            app.DetenerButton.FontName = 'Times New Roman';
+            app.DetenerButton.FontSize = 16;
+            app.DetenerButton.Position = [145 434 67 31];
+
+            % Create GenerarHashButton
+            app.GenerarHashButton = uibutton(app.UIFigure, 'state');
+            app.GenerarHashButton.ValueChangedFcn = createCallbackFcn(app, @GenerarHashButtonValueChanged, true);
+            app.GenerarHashButton.Text = 'Generar Hash';
+            app.GenerarHashButton.FontName = 'Times New Roman';
+            app.GenerarHashButton.FontSize = 16;
+            app.GenerarHashButton.Position = [77 280 104 31];
+
+            % Create AudioOriginalLabel
+            app.AudioOriginalLabel = uilabel(app.UIFigure);
+            app.AudioOriginalLabel.HorizontalAlignment = 'center';
+            app.AudioOriginalLabel.FontName = 'Times New Roman';
+            app.AudioOriginalLabel.FontSize = 16;
+            app.AudioOriginalLabel.Position = [52 320 155 32];
+            app.AudioOriginalLabel.Text = 'Audio Original';
+
+            % Create SeleccionarButton
+            app.SeleccionarButton = uibutton(app.UIFigure, 'state');
+            app.SeleccionarButton.ValueChangedFcn = createCallbackFcn(app, @SeleccionarButtonValueChanged, true);
+            app.SeleccionarButton.Text = 'Seleccionar';
+            app.SeleccionarButton.FontName = 'Times New Roman';
+            app.SeleccionarButton.FontSize = 16;
+            app.SeleccionarButton.Position = [83 140 103 31];
+
+            % Create AudioaVerificarLabel
+            app.AudioaVerificarLabel = uilabel(app.UIFigure);
+            app.AudioaVerificarLabel.HorizontalAlignment = 'center';
+            app.AudioaVerificarLabel.FontName = 'Times New Roman';
+            app.AudioaVerificarLabel.FontSize = 16;
+            app.AudioaVerificarLabel.Position = [51 180 178 32];
+            app.AudioaVerificarLabel.Text = 'Audio a Verificar';
+
+            % Create VerificarButton
+            app.VerificarButton = uibutton(app.UIFigure, 'state');
+            app.VerificarButton.ValueChangedFcn = createCallbackFcn(app, @VerificarButtonValueChanged, true);
+            app.VerificarButton.Text = 'Verificar';
+            app.VerificarButton.FontName = 'Times New Roman';
+            app.VerificarButton.FontSize = 16;
+            app.VerificarButton.Position = [1249 341 103 31];
+
+            % Create VerificaciondeintegridadLabel
+            app.VerificaciondeintegridadLabel = uilabel(app.UIFigure);
+            app.VerificaciondeintegridadLabel.HorizontalAlignment = 'center';
+            app.VerificaciondeintegridadLabel.FontName = 'Times New Roman';
+            app.VerificaciondeintegridadLabel.FontSize = 16;
+            app.VerificaciondeintegridadLabel.Position = [1220 381 171 32];
+            app.VerificaciondeintegridadLabel.Text = 'Verificacion de integridad';
+
+            % Create TextArea
+            app.TextArea = uitextarea(app.UIFigure);
+            app.TextArea.ValueChangedFcn = createCallbackFcn(app, @TextAreaValueChanged, true);
+            app.TextArea.HorizontalAlignment = 'center';
+            app.TextArea.FontName = 'Times New Roman';
+            app.TextArea.FontSize = 18;
+            app.TextArea.FontWeight = 'bold';
+            app.TextArea.BackgroundColor = [0.902 0.902 0.902];
+            app.TextArea.Position = [465 11 501 32];
+
+            % Create Image
+            app.Image = uiimage(app.UIFigure);
+            app.Image.Position = [20 609 192 141];
+            app.Image.ImageSource = fullfile(pathToMLAPP, 'Logo_Instituto_Politécnico_Nacional.png');
+
+            % Create Image_2
+            app.Image_2 = uiimage(app.UIFigure);
+            app.Image_2.Position = [1222 600 157 141];
+            app.Image_2.ImageSource = fullfile(pathToMLAPP, 'LogoEsime.png');
+
+            % Create ReproducirOrigButton
+            app.ReproducirOrigButton = uibutton(app.UIFigure, 'state');
+            app.ReproducirOrigButton.ValueChangedFcn = createCallbackFcn(app, @ReproducirOrigButtonValueChanged, true);
+            app.ReproducirOrigButton.Text = 'Reproducir Orig';
+            app.ReproducirOrigButton.FontName = 'Times New Roman';
+            app.ReproducirOrigButton.FontSize = 16;
+            app.ReproducirOrigButton.Position = [1240 487 121 31];
+
+            % Create ReproducirAuteButton
+            app.ReproducirAuteButton = uibutton(app.UIFigure, 'state');
+            app.ReproducirAuteButton.ValueChangedFcn = createCallbackFcn(app, @ReproducirAuteButtonValueChanged, true);
+            app.ReproducirAuteButton.Text = 'Reproducir Aute';
+            app.ReproducirAuteButton.FontName = 'Times New Roman';
+            app.ReproducirAuteButton.FontSize = 16;
+            app.ReproducirAuteButton.Position = [1240 211 122 31];
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = Sistema_Verificacion
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end]]></w:t></w:r></w:p></w:body></w:document>
